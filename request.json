@@ -1,0 +1,54 @@
+{
+  "size": 50,
+  "from": 50,
+  "_source": {
+    "includes": [
+      "payload",
+      "sessao",
+      "time",
+      "fluxo"
+    ]
+  },
+  "sort": [
+    {
+      "@timestamp": "asc"
+    },
+    {
+      "_uid": "desc"
+    }
+  ],
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "query_string": {
+            "query": "fluxo:\"post-/{cpf}-application/json\"",
+            "analyze_wildcard": true
+          }
+        }
+      ],
+      "should": [
+        {
+          "match": {
+            "payload": "o_codigo\"\"o_msg\"\"o_sucesso\":1"
+          }
+        },
+        {
+          "match": {
+            "payload": "cpf"
+          }
+        }
+      ],
+      "filter": [
+        {
+          "range": {
+            "@timestamp": {
+              "gte": "now-3d/d",
+              "lte": "now/d"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
