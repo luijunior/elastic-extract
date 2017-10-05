@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from consulta_elastic import Elasticsearch
 import json
-import salva_arquivo
+import gera_saida
 from flask import Flask, render_template, request, send_from_directory, make_response
 
 app = Flask(__name__)
@@ -9,7 +9,7 @@ app.config['UPLOAD_FOLDER'] = './'
 
 search_payload = '''
 {
-  "size": 50,
+  "size": %s,
   "from": %s,
   "_source": {
     "includes": [
@@ -53,8 +53,8 @@ search_payload = '''
         {
           "range": {
             "@timestamp": {
-              "gte": "now-3d/d",
-              "lte": "now/d"
+              "gte": "%s",
+              "lte": "%s"
             }
           }
         }
@@ -69,27 +69,35 @@ def index():
     if request.method == 'GET':
         return  render_template('index.html')
     if request.method == 'POST':
-        gera_arquivo()
-        response = make_response(image_binary)
-        return send_from_directory(
-            app.config['UPLOAD_FOLDER'],
-            'cartao.txt',
-            as_attachment=True)
+        data_inicio = request.form['data_inicio']
+        data_fim = request.form['data_fim']
+        if not data_inicio:
+            data_inicio = 'now-3d/d'
+        if not data_fim:
+            data_fim = 'now/d'
+        filename = 'cartao_%s_%s.txt' % (data_inicio, data_fim)
+        response = make_response(gera_string(data_inicio, data_fim))
+        response.headers['Content-Type'] = 'text/csv'
+        response.headers['Content-Disposition'] = 'attachment; filename=%s' % filename
+        return response
 
 
-def gera_arquivo():
+def gera_string(data_inicio, data_fim):
     _from = 0
-    totalRegistros = 100000
+    totalRegistros = 10000
     size = 50
+    resultado_final = ''
     while _from < totalRegistros:
-        search_elastic_payload = json.loads(search_payload % str(_from))
+        search_elastic_payload = json.loads(search_payload % (str(size), str(_from), data_inicio, data_fim))
+        print(search_elastic_payload)
         elasticsearch = Elasticsearch()
         elasticsearch.request('localhost', search_elastic_payload)
         resultado_list = elasticsearch.agrupa_resultados_por_sessao()
         print(elasticsearch.total)
         totalRegistros = elasticsearch.total
         _from += size + 1
-        salva_arquivo.salvar(resultado_list)
+        resultado_final += gera_saida.como_string(resultado_list)
+    return resultado_final
 
 
 if __name__ == '__main__':
