@@ -91,7 +91,7 @@ def gera_string(data_inicio, data_fim):
         search_elastic_payload = json.loads(search_payload % (str(size), str(_from), data_inicio, data_fim))
         print(search_elastic_payload)
         elasticsearch = Elasticsearch()
-        elasticsearch.request('localhost', search_elastic_payload)
+        elasticsearch.request('10.1.60.6', search_elastic_payload)
         resultado_list = elasticsearch.agrupa_resultados_por_sessao()
         print(elasticsearch.total)
         totalRegistros = elasticsearch.total
