@@ -102,10 +102,13 @@ def index():
         data_inicio = request.form['data_inicio']
         data_fim = request.form['data_fim']
         email = request.form['email']
+        host_elastic = request.form['host_elastic']
         if not data_inicio:
             data_inicio = 'now-1d/d'
         if not data_fim:
             data_fim = 'now/d'
+        if not host_elastic:
+            host_elastic = 'localhost'
         if not email:
             return render_template('index.html', sucesso=False, msg='Favor informar um email valido')
         filename = 'cartao_%s_%s.txt' % (data_inicio, data_fim)
@@ -116,7 +119,8 @@ def index():
         thread_data = {'data_inicio': data_inicio,
                        'data_fim': data_fim,
                        'email': email,
-                       'filename': filename}
+                       'filename': filename,
+                       'host_elastic': host_elastic}
         Observable.from_([thread_data])\
                   .map(lambda s: efetua_tarefa(s))\
                   .subscribe_on(pool_scheduler) \
@@ -128,7 +132,7 @@ def index():
 
 
 def efetua_tarefa(thread_data):
-    attach_content = gera_string(thread_data['data_inicio'], thread_data['data_fim'])
+    attach_content = gera_string(thread_data['data_inicio'], thread_data['data_fim'], thread_data['host_elastic'])
     envia_email('Resultado em anexo',
                 thread_data['email'],
                'Extracao de dados',
@@ -139,19 +143,21 @@ def efetua_tarefa(thread_data):
 
 
 def envia_email(body, recipient, subject, filename, attach_content):
-    msg = Message(
-        subject,
-        sender='infogtechrj@gmail.com',
-        recipients=
-        [recipient])
-    msg.attach(filename=filename,
-               content_type='text/csv',
-               data=attach_content)
-    msg.body = body
-    mail.send(msg)
+    with app.app_context():
+        msg = Message(
+            subject,
+            sender='infogtechrj@gmail.com',
+            recipients=
+            [recipient])
+        msg.attach(filename=filename,
+                   content_type='text/csv',
+                   data=attach_content)
+        msg.body = body
+        mail.send(msg)
 
 
-def gera_string(data_inicio, data_fim):
+def gera_string(data_inicio, data_fim, host_elastic):
+    print(host_elastic)
     _from = 0
     totalRegistros = 10000
     size = 50
@@ -160,7 +166,7 @@ def gera_string(data_inicio, data_fim):
         search_elastic_payload = json.loads(search_payload % (str(size), str(_from), data_inicio, data_fim))
         print(search_elastic_payload)
         elasticsearch = Elasticsearch()
-        elasticsearch.request('10.1.60.6', search_elastic_payload)
+        elasticsearch.request(host_elastic, search_elastic_payload)
         resultado_list = elasticsearch.agrupa_resultados_por_sessao()
         print(elasticsearch.total)
         totalRegistros = elasticsearch.total
