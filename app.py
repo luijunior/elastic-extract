@@ -9,11 +9,9 @@ app = Flask(__name__)
 app.config.update(
 	DEBUG=True,
 	#EMAIL SETTINGS
-	MAIL_SERVER='smtp.gmail.com',
-	MAIL_PORT=465,
-	MAIL_USE_SSL=True,
-	MAIL_USERNAME = 'infogtechrj@gmail.com',
-	MAIL_PASSWORD = 'luizinho123'
+	MAIL_SERVER='flash.email.locaweb.com.br',
+	MAIL_PORT=25,
+	MAIL_USE_SSL=False
 	)
 mail = Mail(app)
 
@@ -83,9 +81,11 @@ def index():
         data_fim = request.form['data_fim']
         email = request.form['email']
         if not data_inicio:
-            data_inicio = 'now-3d/d'
+            data_inicio = 'now-1d/d'
         if not data_fim:
             data_fim = 'now/d'
+        if not email:
+            return render_template('index.html', sucesso=False, msg='Favor informar um email valido')
         filename = 'cartao_%s_%s.txt' % (data_inicio, data_fim)
         #response = make_response(gera_string(data_inicio, data_fim))
         #response.headers['Content-Type'] = 'text/csv'
@@ -104,7 +104,7 @@ def index():
 def envia_email(body, recipient, subject, filename, attach_content):
     msg = Message(
         subject,
-        sender='infogtechrj@gmail.com',
+        sender='noreply-soa@ipiranga.com.br',
         recipients=
         [recipient])
     msg.attach(filename=filename,
@@ -122,7 +122,7 @@ def gera_string(data_inicio, data_fim):
         search_elastic_payload = json.loads(search_payload % (str(size), str(_from), data_inicio, data_fim))
         print(search_elastic_payload)
         elasticsearch = Elasticsearch()
-        elasticsearch.request('localhost', search_elastic_payload)
+        elasticsearch.request('10.1.60.6', search_elastic_payload)
         resultado_list = elasticsearch.agrupa_resultados_por_sessao()
         print(elasticsearch.total)
         totalRegistros = elasticsearch.total
