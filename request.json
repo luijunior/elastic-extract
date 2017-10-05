@@ -1,6 +1,6 @@
 {
   "size": 50,
-  "from": 50,
+  "from": {0},
   "_source": {
     "includes": [
       "payload",
