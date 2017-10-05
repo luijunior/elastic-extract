@@ -2,10 +2,20 @@
 from consulta_elastic import Elasticsearch
 import json
 import gera_saida
-from flask import Flask, render_template, request, send_from_directory, make_response
+from flask import Flask, render_template, request, make_response
+from flask_mail import Mail, Message
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = './'
+app.config.update(
+	DEBUG=True,
+	#EMAIL SETTINGS
+	MAIL_SERVER='smtp.gmail.com',
+	MAIL_PORT=465,
+	MAIL_USE_SSL=True,
+	MAIL_USERNAME = 'infogtechrj@gmail.com',
+	MAIL_PASSWORD = 'luizinho123'
+	)
+mail = Mail(app)
 
 search_payload = '''
 {
@@ -71,16 +81,37 @@ def index():
     if request.method == 'POST':
         data_inicio = request.form['data_inicio']
         data_fim = request.form['data_fim']
+        email = request.form['email']
         if not data_inicio:
             data_inicio = 'now-3d/d'
         if not data_fim:
             data_fim = 'now/d'
         filename = 'cartao_%s_%s.txt' % (data_inicio, data_fim)
-        response = make_response(gera_string(data_inicio, data_fim))
-        response.headers['Content-Type'] = 'text/csv'
-        response.headers['Content-Disposition'] = 'attachment; filename=%s' % filename
-        return response
+        #response = make_response(gera_string(data_inicio, data_fim))
+        #response.headers['Content-Type'] = 'text/csv'
+        #response.headers['Content-Disposition'] = 'attachment; filename=%s' % filename
+        attach_content = gera_string(data_inicio, data_fim)
+        envia_email('Resultado em anexo',
+                    email,
+                    'Extracao de dados',
+                    filename,
+                    attach_content
+                    )
 
+        return render_template('index.html', sucesso=True)
+
+
+def envia_email(body, recipient, subject, filename, attach_content):
+    msg = Message(
+        subject,
+        sender='infogtechrj@gmail.com',
+        recipients=
+        [recipient])
+    msg.attach(filename=filename,
+               content_type='text/csv',
+               data=attach_content)
+    msg.body = body
+    mail.send(msg)
 
 def gera_string(data_inicio, data_fim):
     _from = 0
@@ -91,7 +122,7 @@ def gera_string(data_inicio, data_fim):
         search_elastic_payload = json.loads(search_payload % (str(size), str(_from), data_inicio, data_fim))
         print(search_elastic_payload)
         elasticsearch = Elasticsearch()
-        elasticsearch.request('10.1.60.6', search_elastic_payload)
+        elasticsearch.request('localhost', search_elastic_payload)
         resultado_list = elasticsearch.agrupa_resultados_por_sessao()
         print(elasticsearch.total)
         totalRegistros = elasticsearch.total

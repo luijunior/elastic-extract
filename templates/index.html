@@ -7,7 +7,11 @@
      <form method="post">
         <input type="text" name="data_inicio" placeholder="now-3d/d">
         <input type="text" name="data_fim" placeholder="now/d">
+        <input type="text" name="email" placeholder="xxxx@gmail.com">
         <button type="submit">Buscar</button>
+        {% if sucesso %}
+            Sucesso você recebera um email com o txt em breve
+        {% endif %}
     </form>
     </body>
 
