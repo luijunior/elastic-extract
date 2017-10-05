@@ -17,9 +17,11 @@ app = Flask(__name__)
 app.config.update(
 	DEBUG=True,
 	#EMAIL SETTINGS
-	MAIL_SERVER='flash.email.locaweb.com.br',
-	MAIL_PORT=25,
-	MAIL_USE_SSL=False
+    MAIL_SERVER='smtp.gmail.com',
+    MAIL_PORT=465,
+	MAIL_USE_SSL=True,
+    MAIL_USERNAME = 'infogtechrj@gmail.com',
+    MAIL_PASSWORD = 'luizinho123'
 	)
 mail = Mail(app)
 
@@ -139,7 +141,7 @@ def efetua_tarefa(thread_data):
 def envia_email(body, recipient, subject, filename, attach_content):
     msg = Message(
         subject,
-        sender='noreply-soa@ipiranga.com.br',
+        sender='infogtechrj@gmail.com',
         recipients=
         [recipient])
     msg.attach(filename=filename,
