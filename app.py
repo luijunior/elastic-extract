@@ -4,6 +4,14 @@ import json
 import gera_saida
 from flask import Flask, render_template, request, make_response
 from flask_mail import Mail, Message
+from time import sleep
+import multiprocessing
+import random
+import time
+from threading import current_thread
+
+from rx import Observable
+from rx.concurrency import AsyncIOScheduler, ThreadPoolScheduler
 
 app = Flask(__name__)
 app.config.update(
@@ -72,6 +80,18 @@ search_payload = '''
 }'''
 
 
+class PrintObserver(Observable):
+
+    def on_next(self, value):
+        print("Received {0}".format(value))
+
+    def on_completed(self):
+        print("Done!")
+
+    def on_error(self, error):
+        print("Error Occurred: {0}".format(error))
+
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'GET':
@@ -87,18 +107,33 @@ def index():
         if not email:
             return render_template('index.html', sucesso=False, msg='Favor informar um email valido')
         filename = 'cartao_%s_%s.txt' % (data_inicio, data_fim)
-        #response = make_response(gera_string(data_inicio, data_fim))
-        #response.headers['Content-Type'] = 'text/csv'
-        #response.headers['Content-Disposition'] = 'attachment; filename=%s' % filename
-        attach_content = gera_string(data_inicio, data_fim)
-        envia_email('Resultado em anexo',
-                    email,
-                    'Extracao de dados',
-                    filename,
-                    attach_content
-                    )
 
+        #Observer
+        optimal_thread_count = multiprocessing.cpu_count()
+        pool_scheduler = ThreadPoolScheduler(optimal_thread_count)
+        thread_data = {'data_inicio': data_inicio,
+                       'data_fim': data_fim,
+                       'email': email,
+                       'filename': filename}
+        Observable.from_([thread_data])\
+                  .map(lambda s: efetua_tarefa(s))\
+                  .subscribe_on(pool_scheduler) \
+                  .subscribe(on_next=lambda s: print("PROCESS 1: {0} {1}".format(current_thread().name, s)),
+                       on_error=lambda e: print(e),
+                       on_completed=lambda: print("PROCESS 1 done!"))
+        #end
         return render_template('index.html', sucesso=True)
+
+
+def efetua_tarefa(thread_data):
+    attach_content = gera_string(thread_data['data_inicio'], thread_data['data_fim'])
+    envia_email('Resultado em anexo',
+                thread_data['email'],
+               'Extracao de dados',
+                thread_data['filename'],
+               attach_content
+               )
+    return True
 
 
 def envia_email(body, recipient, subject, filename, attach_content):
@@ -112,6 +147,7 @@ def envia_email(body, recipient, subject, filename, attach_content):
                data=attach_content)
     msg.body = body
     mail.send(msg)
+
 
 def gera_string(data_inicio, data_fim):
     _from = 0
