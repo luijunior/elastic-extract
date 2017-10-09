@@ -2,7 +2,7 @@
 from consulta_elastic import Elasticsearch
 import json
 import gera_saida
-from flask import Flask, render_template, request, make_response
+from flask import Flask, render_template, request
 from flask_mail import Mail, Message
 from time import sleep
 import multiprocessing
@@ -17,11 +17,9 @@ app = Flask(__name__)
 app.config.update(
 	DEBUG=True,
 	#EMAIL SETTINGS
-    MAIL_SERVER='smtp.gmail.com',
-    MAIL_PORT=465,
-	MAIL_USE_SSL=True,
-    MAIL_USERNAME = 'infogtechrj@gmail.com',
-    MAIL_PASSWORD = 'luizinho123'
+    MAIL_SERVER='flash.email.locaweb.com.br',
+    MAIL_PORT=25,
+	MAIL_USE_SSL=False
 	)
 mail = Mail(app)
 
@@ -146,7 +144,7 @@ def envia_email(body, recipient, subject, filename, attach_content):
     with app.app_context():
         msg = Message(
             subject,
-            sender='infogtechrj@gmail.com',
+            sender='noreply-soa@ipiranga.com.br',
             recipients=
             [recipient])
         msg.attach(filename=filename,
